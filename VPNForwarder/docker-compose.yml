@@ -1,0 +1,38 @@
+services:
+  openvpn-client:
+    image: dperson/openvpn-client
+    container_name: openvpn-client
+    cap_add:
+      - NET_ADMIN
+    restart: unless-stopped
+    volumes:
+      - ./vpn-config:/vpn
+    environment:
+      - TZ=Europe/Helsinki
+      - VERBOSE=true
+    command: ['-f "/vpn/config.ovpn"']
+    networks:
+      - reverseproxy_network
+
+  vpn-forwarder:
+    image: alpine
+    restart: unless-stopped
+    container_name: vpn-forwarder
+    cap_add:
+      - NET_ADMIN
+    command: >
+      sh -c "
+      apk add --no-cache iptables &&
+      ip route add [home_server_ip] via 172.20.0.7 &&
+      iptables -t nat -A PREROUTING -p tcp --dport 1:65535 -j DNAT --to-destination [home_server_ip] &&
+      iptables -t nat -A POSTROUTING -j MASQUERADE &&
+      tail -f /dev/null
+      "
+    networks:
+      - reverseproxy_network
+    depends_on:
+      - openvpn-client
+
+networks:
+  reverseproxy_network:
+    external: true

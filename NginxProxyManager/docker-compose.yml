@@ -1,0 +1,22 @@
+services:
+  npm:
+    image: 'jc21/nginx-proxy-manager:latest'
+    ports:
+      - '80:80'
+      - '81:81'
+      - '443:443'
+    volumes:
+      - ./data:/data
+      - ./letsencrypt:/etc/letsencrypt
+    restart: unless-stopped
+    networks:
+      - reverseproxy_network
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+networks:
+  reverseproxy_network:
+      name: reverseproxy_network
+      driver: bridge
+  host:
+    external: true
